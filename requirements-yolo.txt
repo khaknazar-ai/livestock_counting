@@ -1,0 +1,2 @@
+# Optional web application YOLO model selector
+ultralytics==8.0.145

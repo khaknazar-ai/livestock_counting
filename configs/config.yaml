@@ -1,0 +1,87 @@
+# ============================================================
+# Master configuration file
+# Dense Livestock Counting via Density Estimation & Transfer Learning
+# All paths are relative to project root (livestock_counting/)
+# ============================================================
+
+# ---------- Project Paths ----------
+paths:
+  data_root:        "data/livestock"
+  image_dir:        "data/livestock/images"
+  annotation_dir:   "data/livestock/annotations"
+  density_map_dir:  "data/livestock/density_maps"
+  pretrained_dir:   "models/pretrained"
+  log_dir:          "experiments/logs"
+  webapp_upload:    "webapp/uploads"
+
+# ---------- Dataset Split ----------
+dataset:
+  train_ratio: 0.7
+  val_ratio:   0.15
+  test_ratio:  0.15
+  seed:        42            # Reproducibility
+
+# ---------- Density Map Generation ----------
+density_map:
+  method:      "adaptive_gaussian"   # Uses k-nearest-neighbor distance scaling
+  k_nearest:   3                     # Number of neighbors for adaptive sigma
+  min_sigma:   4                     # Minimum Gaussian sigma (pixels)
+  fixed_sigma: 15                    # Used when annotation count is too low for adaptive
+  output_size: [512, 512]            # All density maps resized to this
+
+# ---------- Model: CSRNet ----------
+csrnet:
+  pretrained_backbone: "models/pretrained/vgg16-397923af.pth"
+  # VGG-16 ImageNet weights — download from torchvision model zoo
+  # url: https://download.pytorch.org/models/vgg16-397923af.pth
+
+  crowd_pretrained: "models/pretrained/shanghaitech_partA_best.pth"
+  # Full CSRNet pretrained on ShanghaiTech Part A (crowd counting)
+  # This is the KEY transfer learning checkpoint for the project.
+  # If this file exists → full crowd→livestock transfer (Tier 1)
+  # If missing → falls back to VGG-16 ImageNet only (Tier 2)
+
+  freeze_frontend: true              # Freeze VGG-16 frontend during early training
+  frontend_unfreeze_epoch: 20        # Unfreeze frontend after this epoch for fine-tuning
+
+# ---------- Training ----------
+train:
+  batch_size:       4                # Fits RTX 3060 6GB with 512x512 input
+  num_epochs:       80
+  learning_rate:    1.0e-5           # Low LR for transfer learning fine-tuning
+  lr_frontend:      1.0e-6           # Even lower LR for unfrozen VGG frontend
+  weight_decay:     5.0e-4
+  loss:             "mse"            # MSE on density map (standard CSRNet loss)
+  lr_scheduler:     "step"
+  lr_step_size:     20               # Decay LR every 20 epochs
+  lr_gamma:         0.1
+  save_best:        true             # Save checkpoint with lowest val MAE
+  input_size:       [512, 512]       # Images resized before feeding to model
+
+# ---------- Evaluation ----------
+eval:
+  metrics:          ["MAE", "RE"]    # Mean Absolute Error, Relative Error
+  # RE = |pred - gt| / gt  (per image, then averaged)
+  batch_size:       1                # Inference one image at a time for evaluation
+
+# ---------- Detection Baseline: YOLOv8n ----------
+baseline:
+  model:            "yolov8n.pt"     # YOLOv8 nano — lightest variant
+  conf_threshold:   0.25
+  iou_threshold:    0.45
+  img_size:         640
+  device:           "cuda"           # or "cpu"
+
+# ---------- Web App ----------
+webapp:
+  host:             "0.0.0.0"
+  port:             5000
+  debug:            false
+  max_upload_mb:    16
+  allowed_ext:      ["jpg", "jpeg", "png"]
+  example_images:   "webapp/static/examples"
+
+# ---------- Hardware ----------
+hardware:
+  device:   "cuda"                   # Switch to "cpu" if no GPU available
+  num_workers: 0                     # DataLoader workers

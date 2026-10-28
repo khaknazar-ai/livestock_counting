@@ -1,0 +1,59 @@
+{% extends "base.html" %}{% block title %}记录管理{% endblock %}
+{% block content %}
+<div class="page-header"><h1>记录管理</h1>
+  <div class="header-actions">
+    {% if current_user.role=='admin' %}<button onclick="batchDel()" class="btn btn-danger btn-sm" id="btn-bdel" style="display:none">删除选中</button>{% endif %}
+    {% if current_user.role in ['admin','manager'] %}
+    <a href="/api/export/csv" class="btn btn-outline btn-sm">CSV</a>
+    <a href="/api/export/excel" class="btn btn-outline btn-sm">Excel</a>
+    <a href="/api/export/report" class="btn btn-outline btn-sm">HTML报告</a>{% endif %}
+  </div></div>
+<div class="card filter-bar"><form method="GET" action="/history" class="filter-form">
+  <input type="text" name="search" value="{{ search }}" placeholder="搜索文件名/任务名/ID" class="input-field" style="width:200px">
+  <select name="status" class="input-field select-field"><option value="">全部状态</option>
+    <option value="completed" {% if status=='completed' %}selected{% endif %}>已完成</option>
+    <option value="corrected" {% if status=='corrected' %}selected{% endif %}>已校正</option>
+    <option value="needs_review" {% if status=='needs_review' %}selected{% endif %}>待审核</option>
+    </select>
+  <select name="confidence" class="input-field select-field"><option value="">全部置信度</option>
+    <option value="high" {% if confidence=='high' %}selected{% endif %}>高</option>
+    <option value="medium" {% if confidence=='medium' %}selected{% endif %}>中</option>
+    <option value="low" {% if confidence=='low' %}selected{% endif %}>低</option>
+    </select>
+  {% if current_user.role in ['admin','manager'] %}<select name="user" class="input-field select-field"><option value="">全部用户</option>
+    {% for u in all_users %}<option value="{{ u.username }}" {% if user_filter==u.username %}selected{% endif %}>{{ u.display_name or u.username }}</option>{% endfor %}</select>{% endif %}
+  <input type="date" name="date_from" value="{{ date_from }}" class="input-field" style="width:140px" placeholder="开始日期">
+  <input type="date" name="date_to" value="{{ date_to }}" class="input-field" style="width:140px" placeholder="结束日期">
+  <button type="submit" class="btn btn-primary btn-sm">搜索</button>
+  {% if search or status or confidence or user_filter or date_from or date_to %}<a href="/history" class="btn btn-outline btn-sm">清除</a>{% endif %}
+</form><span class="filter-count">共 {{ total }} 条</span></div>
+<div class="card"><table class="data-table"><thead><tr>
+  {% if current_user.role=='admin' %}<th><input type="checkbox" onchange="ta(this)"></th>{% endif %}
+  <th>时间</th><th>名称</th><th>文件</th><th>模型</th><th>预测</th><th>校正</th><th>置信度</th><th>状态</th><th>用户</th><th>操作</th>
+</tr></thead><tbody>
+{% for t in tasks %}<tr>
+  {% if current_user.role=='admin' %}<td><input type="checkbox" class="rc" value="{{ t.task_id }}" onchange="ub()"></td>{% endif %}
+  <td>{{ t.timestamp[5:] }}</td><td>{{ t.task_name[:15] or '—' }}</td>
+  <td title="{{ t.filename }}">{{ t.filename[:18] }}{% if t.filename|length>18 %}…{% endif %}</td>
+  <td><span class="status-badge" style="font-size:11px">{{ t.model_used or 'csrnet' }}</span></td>
+  <td><strong>{{ t.predicted_count|round|int }}</strong></td>
+  <td>{% if t.corrected_count is not none %}<strong class="corrected">{{ t.corrected_count|round|int }}</strong>{% else %}—{% endif %}</td>
+  <td><span class="conf-dot conf-{{ t.confidence_level or 'unknown' }}"></span>{{ t.confidence_level or '—' }}</td>
+  <td><span class="status-badge status-{{ t.status }}">{% if t.status=='corrected' %}已校正{% elif t.status=='needs_review' %}待审核{% else %}已完成{% endif %}</span></td>
+  <td>{{ t.created_by or '—' }}</td>
+  <td><a href="/task/{{ t.task_id }}" class="btn btn-outline btn-xs">详情</a></td>
+</tr>{% endfor %}
+{% if not tasks %}<tr><td colspan="10" class="empty-row">暂无记录</td></tr>{% endif %}
+</tbody></table>
+{% if total_pages > 1 %}<div class="pagination">
+  {% if page>1 %}<a href="?page={{ page-1 }}&search={{ search }}&status={{ status }}&confidence={{ confidence }}&user={{ user_filter }}&date_from={{ date_from }}&date_to={{ date_to }}" class="page-link">上一页</a>{% endif %}
+  <span class="page-info">{{ page }}/{{ total_pages }}</span>
+  {% if page<total_pages %}<a href="?page={{ page+1 }}&search={{ search }}&status={{ status }}&confidence={{ confidence }}&user={{ user_filter }}&date_from={{ date_from }}&date_to={{ date_to }}" class="page-link">下一页</a>{% endif %}
+</div>{% endif %}</div>
+<script>
+function ta(e){document.querySelectorAll('.rc').forEach(function(c){c.checked=e.checked});ub()}
+function ub(){var n=document.querySelectorAll('.rc:checked').length;var b=document.getElementById('btn-bdel');if(b)b.style.display=n?'inline-flex':'none'}
+function batchDel(){var ids=[].slice.call(document.querySelectorAll('.rc:checked')).map(function(c){return c.value});
+if(!ids.length||!confirm('移至回收站 '+ids.length+' 条？'))return;
+fetch('/api/tasks/batch_delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({task_ids:ids})}).then(function(){location.reload()})}
+</script>{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "base.html" %}{% block title %}任务详情{% endblock %}
+{% block content %}
+<div class="page-header"><a href="/history" class="btn btn-outline btn-sm">← 返回</a><h1>任务详情</h1>
+  <div class="header-actions"><a href="/api/export/task/{{ task.task_id }}" class="btn btn-outline btn-sm">导出此任务</a></div></div>
+<div class="detail-grid"><div class="detail-left">
+  <div class="card"><h2 class="card-title">任务信息</h2><table class="info-table">
+    <tr><td class="label">任务ID</td><td>{{ task.task_id[:12] }}…</td></tr>
+    <tr><td class="label">名称</td><td><span id="tn">{{ task.task_name or '未命名' }}</span> <button onclick="en()" class="btn-inline">编辑</button></td></tr>
+    <tr><td class="label">文件</td><td>{{ task.filename }}</td></tr>
+    <tr><td class="label">类型</td><td>{{ task.input_type }}</td></tr>
+    <tr><td class="label">时间</td><td>{{ task.timestamp }}</td></tr>
+    <tr><td class="label">操作员</td><td>{{ task.created_by or '—' }}</td></tr>
+    <tr><td class="label">使用模型</td><td><strong>{{ task.model_used or 'csrnet' }}</strong></td></tr>
+    <tr><td class="label">耗时</td><td>{{ '%.1f'|format(task.inference_ms) }} ms</td></tr>
+    <tr><td class="label">置信度</td><td>{{ task.confidence_level or '—' }}</td></tr>
+    <tr><td class="label">状态</td><td><span class="status-badge status-{{ task.status }}">{% if task.status=='corrected' %}已校正{% elif task.status=='needs_review' %}待审核{% else %}已完成{% endif %}</span></td></tr>
+  </table></div>
+  <div class="card"><h2 class="card-title">清点结果</h2>
+    <div class="count-comparison">
+      <div class="count-box"><span class="count-label">模型预测</span><span class="count-value-lg">{{ task.predicted_count|round|int }}</span><span class="hint">Raw: {{ '%.2f'|format(task.predicted_count) }}</span></div>
+      <div class="count-box {% if task.corrected_count is not none %}highlighted{% endif %}"><span class="count-label">校正结果</span><span class="count-value-lg" id="cd">{% if task.corrected_count is not none %}{{ task.corrected_count|round|int }}{% else %}—{% endif %}</span></div>
+    </div>
+    <div style="border-left:4px solid {{ confidence.color }};padding:10px;margin:10px 0;background:#f8fafc;border-radius:0 6px 6px 0">
+      <strong style="color:{{ confidence.color }}">{{ confidence.label }}</strong><p class="hint">{{ confidence.hint }}</p>
+      {% if confidence.needs_review %}<p style="color:#dc2626;font-size:13px;margin-top:4px">⚠ 建议人工核查</p>{% endif %}
+    </div>
+    {% if task.correction_note %}<div class="correction-note"><strong>备注：</strong>{{ task.correction_note }}</div>{% endif %}
+  </div>
+  {% if current_user.role in ['admin','manager'] %}
+  <div class="card"><h2 class="card-title">手动校正</h2>
+    <div class="form-group"><label>校正数量（整数）</label><input type="number" id="cc" step="1" min="0" value="{{ task.corrected_count|round|int if task.corrected_count is not none else task.predicted_count|round|int }}" class="input-field"></div>
+    <div class="form-group"><label>备注</label><textarea id="cn" rows="2" class="input-field">{{ task.correction_note }}</textarea></div>
+    <button onclick="corr()" class="btn btn-primary">保存校正</button><span id="cm" class="msg"></span></div>
+  <div class="card"><button onclick="del_()" class="btn btn-danger btn-sm">移至回收站</button></div>{% endif %}
+  {% if audit_logs %}
+  <div class="card"><h2 class="card-title">操作日志</h2><table class="data-table compact"><thead><tr><th>时间</th><th>用户</th><th>操作</th><th>详情</th></tr></thead><tbody>
+    {% for l in audit_logs %}<tr><td>{{ l.timestamp[5:] }}</td><td>{{ l.username }}</td><td>{{ l.action }}</td><td class="hint">{{ l.detail[:40] }}</td></tr>{% endfor %}
+  </tbody></table></div>{% endif %}
+</div><div class="detail-right">
+  {% if task.overlay_path %}<div class="card"><h2 class="card-title">叠加视图</h2><img src="/api/result_image/{{ task.overlay_path }}" class="detail-img" onerror="this.style.display='none'"></div>{% endif %}
+  {% if task.heatmap_path %}<div class="card"><h2 class="card-title">密度热力图</h2><img src="/api/result_image/{{ task.heatmap_path }}" class="detail-img" onerror="this.style.display='none'"></div>{% endif %}
+  {% if task.image_path %}<div class="card"><h2 class="card-title">原始图片</h2><img src="/api/upload_image/{{ task.image_path }}" class="detail-img" onerror="this.style.display='none'"></div>{% endif %}
+</div></div>
+<script>
+var T='{{ task.task_id }}';
+function corr(){fetch('/api/task/'+T+'/correct',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({corrected_count:parseInt(document.getElementById('cc').value),correction_note:document.getElementById('cn').value})}).then(function(r){return r.json()}).then(function(d){document.getElementById('cm').textContent=d.success?'已保存':'失败';if(d.success){toast('校正已保存','success');setTimeout(function(){location.reload()},600)}})}
+function en(){var n=prompt('名称:',document.getElementById('tn').textContent);if(n!==null)fetch('/api/task/'+T+'/name',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({task_name:n})}).then(function(){document.getElementById('tn').textContent=n||'未命名'})}
+function del_(){if(confirm('移至回收站？'))fetch('/api/task/'+T,{method:'DELETE'}).then(function(){toast('已移至回收站','success');location.href='/history'})}
+</script>{% endblock %}

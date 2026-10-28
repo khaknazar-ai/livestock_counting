@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% block title %}数据看板{% endblock %}
+{% block content %}
+<div class="page-header"><h1>数据看板</h1></div>
+<div class="stat-grid">
+  <div class="stat-card"><span class="stat-number">{{ stats.total_tasks }}</span><span class="stat-label">总清点次数</span></div>
+  <div class="stat-card"><span class="stat-number">{{ stats.avg_predicted }}</span><span class="stat-label">平均预测</span></div>
+  <div class="stat-card"><span class="stat-number">{{ stats.avg_corrected or '—' }}</span><span class="stat-label">平均校正</span></div>
+  <div class="stat-card"><span class="stat-number">{{ stats.correction_rate }}%</span><span class="stat-label">校正率</span></div>
+  <div class="stat-card"><span class="stat-number">{{ stats.avg_inference_ms }}</span><span class="stat-label">平均耗时(ms)</span></div>
+</div>
+<div class="dash-grid">
+  <div class="card"><h2 class="card-title">状态分布</h2><div class="status-bars">{% for s,c in stats.status_counts.items() %}<div class="status-row"><span class="status-badge status-{{ s }}">{% if s=='corrected' %}已校正{% elif s=='needs_review' %}待审核{% elif s=='rejected' %}已拒绝{% else %}已完成{% endif %}</span><div class="bar-wrap"><div class="bar" style="width:{{ (c/stats.total_tasks*100) if stats.total_tasks else 0 }}%"></div></div><span class="bar-val">{{ c }}</span></div>{% endfor %}</div></div>
+  <div class="card"><h2 class="card-title">置信度分布</h2><div class="status-bars">{% for cl,c in stats.confidence_counts.items() %}<div class="status-row"><span class="conf-dot conf-{{ cl }}"></span><span style="width:60px;font-size:13px">{{ cl }}</span><div class="bar-wrap"><div class="bar" style="width:{{ (c/stats.total_tasks*100) if stats.total_tasks else 0 }}%;background:{% if cl=='high' %}#059669{% elif cl=='medium' %}#d97706{% elif cl=='low' %}#dc2626{% else %}#94a3b8{% endif %}"></div></div><span class="bar-val">{{ c }}</span></div>{% endfor %}</div></div>
+</div>
+<div class="dash-grid">
+  <div class="card"><h2 class="card-title">每日统计</h2>{% if stats.daily_counts %}<table class="data-table compact"><thead><tr><th>日期</th><th>次数</th><th>平均</th></tr></thead><tbody>{% for d in stats.daily_counts %}<tr><td>{{ d.day }}</td><td>{{ d.c }}</td><td>{{ '%.1f'|format(d.avg_count) }}</td></tr>{% endfor %}</tbody></table>{% else %}<p class="hint">暂无</p>{% endif %}</div>
+  <div class="card"><h2 class="card-title">最近记录</h2><table class="data-table compact"><thead><tr><th>时间</th><th>文件</th><th>预测</th><th>状态</th></tr></thead><tbody>{% for t in stats.recent_tasks %}<tr><td>{{ t.timestamp[5:] }}</td><td>{{ t.filename[:20] }}</td><td>{{ t.predicted_count|round|int }}</td><td><span class="status-badge status-{{ t.status }}">{{ t.status }}</span></td></tr>{% endfor %}</tbody></table></div>
+</div>{% endblock %}

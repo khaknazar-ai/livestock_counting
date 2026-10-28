@@ -1,0 +1,10 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>登录</title><link rel="stylesheet" href="/static/style.css"></head>
+<body class="login-body"><div class="login-card">
+<div class="login-header"><span style="font-size:40px">🐄</span><h1>密集畜群清点系统</h1><p class="hint">请登录</p></div>
+{% if error %}<div class="login-error">{{ error }}</div>{% endif %}
+<form method="POST"><div class="form-group"><label>用户名</label><input type="text" name="username" class="input-field" required autofocus></div>
+<div class="form-group"><label>密码</label><input type="password" name="password" class="input-field" required></div>
+<button type="submit" class="btn btn-primary">登录</button></form>
+<div class="login-hint"><p>admin/admin123 · manager/manager123 · operator/operator123</p></div>
+</div></body></html>

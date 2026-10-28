@@ -1,0 +1,52 @@
+{% extends "base.html" %}{% block title %}批量清点{% endblock %}
+{% block content %}
+<div class="page-header"><h1>批量清点</h1></div>
+<div class="batch-layout">
+  <div class="card"><h2 class="card-title">批量上传</h2>
+    <div class="form-group"><label>批次名称</label><input type="text" id="batch-name" placeholder="例：2024年3月巡检" class="input-field"></div>
+    {% if current_user.role == 'admin' %}
+    <div class="form-group"><label>推理模型</label><select id="batch-model-select" class="input-field">
+      <option value="csrnet">CSRNet 密度估计</option>
+      {% if msa_loaded %}<option value="msa_csrnet">MSA-CSRNet 多尺度注意力</option>{% endif %}
+      {% if yolo_loaded %}<option value="yolo_finetune">YOLOv8n 微调检测</option>{% endif %}
+      {% if yolo_zs_loaded %}<option value="yolo_zeroshot">YOLOv8n Zero-shot</option>{% endif %}
+    </select></div>
+    {% endif %}
+    <div id="batch-drop" class="drop-zone"><span class="drop-icon">📁</span><p>拖拽多张图片或点击</p><input type="file" id="batch-input" accept="image/jpeg,image/png" multiple hidden></div>
+    <div id="batch-preview" class="batch-preview hidden"></div>
+    <button id="btn-batch" class="btn btn-primary" disabled>开始批量清点</button></div>
+  <div class="card"><h2 class="card-title">批量结果</h2>
+    <div id="bp" class="placeholder-state"><p>上传后显示结果</p></div>
+    <div id="bl" class="loading-state hidden"><div class="spinner"></div><p>处理中…</p></div>
+    <div id="br" class="hidden">
+      <div class="stat-grid-sm">
+        <div class="stat-card"><span class="stat-number" id="br-total">0</span><span class="stat-label">总图片</span></div>
+        <div class="stat-card"><span class="stat-number" id="br-count">0</span><span class="stat-label">总计数</span></div>
+        <div class="stat-card"><span class="stat-number" id="br-avg">0</span><span class="stat-label">平均</span></div>
+        <div class="stat-card"><span class="stat-number" id="br-conf">—</span><span class="stat-label">置信度分布</span></div>
+      </div>
+      <table class="data-table" id="bt"><thead><tr><th>文件</th><th>数量</th><th>置信度</th><th>状态</th><th>操作</th></tr></thead><tbody></tbody></table>
+    </div></div>
+</div>
+<script>
+var bd=document.getElementById('batch-drop'),bi=document.getElementById('batch-input'),bp=document.getElementById('batch-preview'),bb=document.getElementById('btn-batch'),bf=[];
+bd.onclick=function(){bi.click()};bd.ondragover=function(e){e.preventDefault();bd.classList.add('drag-over')};bd.ondragleave=function(){bd.classList.remove('drag-over')};
+bd.ondrop=function(e){e.preventDefault();bd.classList.remove('drag-over');af(e.dataTransfer.files)};bi.onchange=function(e){af(e.target.files)};
+function af(f){bf=[].concat(bf,[].slice.call(f).filter(function(x){return['image/jpeg','image/png'].indexOf(x.type)>=0}));
+bp.innerHTML=bf.map(function(x,i){return'<span class="batch-file">'+x.name+' <button onclick="rf('+i+')">✕</button></span>'}).join('');
+bp.classList.toggle('hidden',!bf.length);bb.disabled=!bf.length}
+function rf(i){bf.splice(i,1);af([])}
+bb.onclick=function(){if(!bf.length)return;
+document.getElementById('bp').classList.add('hidden');document.getElementById('bl').classList.remove('hidden');document.getElementById('br').classList.add('hidden');
+var fd=new FormData(),bn=document.getElementById('batch-name').value;if(bn)fd.append('batch_name',bn);var ms=document.getElementById('batch-model-select');if(ms)fd.append('model',ms.value);bf.forEach(function(f){fd.append('images',f)});
+fetch('/api/batch_upload',{method:'POST',body:fd}).then(function(r){return r.json()}).then(function(d){
+document.getElementById('bl').classList.add('hidden');document.getElementById('br').classList.remove('hidden');
+document.getElementById('br-total').textContent=d.total_images;document.getElementById('br-count').textContent=d.total_count;
+document.getElementById('br-avg').textContent=d.avg_count||0;
+var cd=d.confidence_distribution||{};document.getElementById('br-conf').textContent=Object.keys(cd).map(function(k){return k+':'+cd[k]}).join(' ')||'—';
+document.querySelector('#bt tbody').innerHTML=d.results.map(function(r){
+if(!r.success)return'<tr><td>'+r.filename+'</td><td colspan="4" style="color:#dc2626">'+r.error+'</td></tr>';
+var c=r.confidence||{},st=r.status==='needs_review'?'<span class="status-badge status-needs_review">待审核</span>':'<span class="status-badge status-completed">已完成</span>';
+return'<tr><td>'+r.filename+'</td><td><strong>'+(r.display_count||0)+'</strong></td><td style="color:'+(c.color||'#333')+'">'+(c.label||'')+'</td><td>'+st+'</td><td><a href="/task/'+r.task_id+'" class="btn btn-outline btn-xs">详情</a></td></tr>'}).join('');
+bf=[];bp.innerHTML='';bp.classList.add('hidden');bb.disabled=true;toast('批量清点完成','success')}).catch(function(e){document.getElementById('bl').classList.add('hidden');toast(e.message,'error')})};
+</script>{% endblock %}

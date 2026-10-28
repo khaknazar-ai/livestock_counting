@@ -1,0 +1,29 @@
+{% extends "base.html" %}{% block title %}帮助{% endblock %}
+{% block content %}
+<div class="page-header"><h1>使用帮助</h1></div>
+<div class="help-grid">
+  <div class="card" style="border-left:4px solid #2563eb"><h2 class="card-title">模型适用范围</h2>
+    <table class="data-table"><thead><tr><th>维度</th><th style="color:#059669">支持</th><th style="color:#dc2626">不支持</th></tr></thead><tbody>
+      <tr><td><strong>畜种</strong></td><td>羊群、牛群</td><td>猪、鸡、马、宠物等</td></tr>
+      <tr><td><strong>视角</strong></td><td>俯视（无人机）、斜视</td><td>平视、近距离特写</td></tr>
+      <tr><td><strong>场景</strong></td><td>圈舍、牧场密集畜群</td><td>单头、分散放牧、非农业</td></tr>
+      <tr><td><strong>密度</strong></td><td>5头以上聚集</td><td>极少量或无目标</td></tr>
+    </tbody></table><p class="hint" style="margin-top:8px">系统会自动验证输入适用性。不适合的图片会被拒绝或标记待审核。</p></div>
+  <div class="card"><h2 class="card-title">流程</h2><div class="help-steps">
+    <div class="help-step"><span class="step-num">1</span><div><strong>上传</strong><p>选择俯视/斜视角度的羊群或牛群图片</p></div></div>
+    <div class="help-step"><span class="step-num">2</span><div><strong>域门验证</strong><p>系统检查图片质量和域内相似度</p></div></div>
+    <div class="help-step"><span class="step-num">3</span><div><strong>结果</strong><p>整数预测 + 置信度 + 热力图</p></div></div>
+    <div class="help-step"><span class="step-num">4</span><div><strong>审核校正</strong><p>低置信度自动标记待审核，管理员校正</p></div></div>
+    <div class="help-step"><span class="step-num">5</span><div><strong>导出</strong><p>CSV/Excel/PDF报告，含审计日志</p></div></div>
+  </div></div>
+  <div class="card"><h2 class="card-title">角色权限</h2><table class="data-table"><thead><tr><th>角色</th><th>权限</th></tr></thead><tbody>
+    <tr><td><strong>admin</strong></td><td>全部功能 + 用户管理 + 审计日志 + 回收站恢复</td></tr>
+    <tr><td><strong>manager</strong></td><td>清点 + 校正 + 导出 + 数据看板</td></tr>
+    <tr><td><strong>operator</strong></td><td>清点 + 查看自己的记录</td></tr>
+  </tbody></table></div>
+    <div class="card"><h2 class="card-title">置信度评估</h2><p>置信度基于TTA（测试时增强）稳定性评估：</p><table class="data-table" style="margin-top:8px"><thead><tr><th>置信度</th><th>含义</th><th>建议操作</th></tr></thead><tbody>
+    <tr><td><span style="color:#059669;font-weight:600">高置信度</span></td><td>翻转增强后计数波动小（CV&lt;12%）</td><td>结果可信，可直接使用</td></tr>
+    <tr><td><span style="color:#d97706;font-weight:600">中置信度</span></td><td>计数有一定波动（CV 12-40%）</td><td>参考热力图确认</td></tr>
+    <tr><td><span style="color:#dc2626;font-weight:600">低置信度</span></td><td>计数波动较大（CV&gt;40%）或图片质量差</td><td>建议人工核查并校正</td></tr>
+  </tbody></table><p class="hint" style="margin-top:8px">系统始终显示模型结果和热力图，由用户通过可视化判断结果可靠性。管理员/管理人员可在详情页进行手动校正。</p></div>
+{% endblock %}

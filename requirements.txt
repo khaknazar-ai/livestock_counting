@@ -1,0 +1,17 @@
+# Runtime and training dependencies for the configured CUDA 11.3 environment
+--extra-index-url https://download.pytorch.org/whl/cu113
+
+torch==1.12.1+cu113
+torchvision==0.13.1+cu113
+opencv-python==4.7.0.72
+Pillow==9.5.0
+scipy==1.10.1
+numpy==1.24.3
+matplotlib==3.7.1
+Flask==2.2.5
+Werkzeug==2.2.3
+bcrypt>=4.0,<5.0
+openpyxl>=3.1,<4.0
+tensorboard==2.12.0
+PyYAML==6.0
+tqdm==4.65.0

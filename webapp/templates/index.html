@@ -1,0 +1,41 @@
+{% extends "base.html" %}{% block title %}单张清点{% endblock %}
+{% block content %}
+<div class="main-grid">
+  <section class="panel"><div class="card"><h2 class="card-title">上传图片</h2>
+    <div id="drop-zone" class="drop-zone"><span class="drop-icon">🖼️</span><p>拖拽或点击选择</p><p class="hint">JPG / PNG，最大 16 MB</p><input type="file" id="file-input" accept="image/jpeg,image/png" hidden></div>
+    <div id="preview-container" class="hidden"><img id="preview-img" class="preview-img" src=""><p id="preview-name" class="hint"></p></div>
+    <div class="form-group"><label>任务名称（可选）</label><input type="text" id="task-name-input" placeholder="例：东区羊舍" class="input-field"></div>
+      {% if current_user.role == 'admin' %}
+      <div class="form-group"><label>推理模型</label><select id="model-select" class="input-field">
+        <option value="csrnet">CSRNet 密度估计</option>
+        {% if msa_loaded %}<option value="msa_csrnet">MSA-CSRNet 多尺度注意力</option>{% endif %}
+        {% if yolo_loaded %}<option value="yolo_finetune">YOLOv8n 微调检测</option>{% endif %}
+        {% if yolo_zs_loaded %}<option value="yolo_zeroshot">YOLOv8n Zero-shot</option>{% endif %}
+      </select></div>
+      {% endif %}
+    <button id="btn-upload" class="btn btn-primary" disabled>开始清点</button></div>
+  </section>
+  <section class="panel">
+    <div class="card">
+      <div id="placeholder-state" class="placeholder-state"><span class="placeholder-icon">🐑</span><p>上传后显示结果</p></div>
+      <div id="result-state" class="hidden">
+        <div class="count-block"><span class="count-label">预测数量</span><span id="count-value" class="count-value">—</span><span class="count-unit">头</span></div>
+        <div class="meta-row"><span id="raw-count" class="hint"></span></div>
+        <div class="meta-row"><span id="meta-time"></span><span id="meta-ms"></span><span id="meta-file"></span></div>
+        <div id="confidence-badge" class="confidence-badge hidden"></div>
+        <div id="confidence-hint" class="review-hint hidden"></div>
+        <div id="status-indicator" class="review-hint hidden" style="background:#fef2f2"></div>
+        <ul id="warning-list" class="warning-list hidden"></ul>
+        <div class="action-row"><a id="btn-view-detail" href="#" class="btn btn-outline btn-sm" style="display:none">详情</a></div>
+      </div>
+      <div id="loading-state" class="loading-state hidden"><div class="spinner"></div><p>推理中…</p></div>
+      <div id="error-state" class="error-state hidden"><p id="error-msg"></p></div>
+    </div>
+    <div class="card">
+      <div class="tab-bar"><button class="tab-btn active" onclick="switchTab('overlay',this)">叠加视图</button><button class="tab-btn" onclick="switchTab('heatmap',this)">密度热力图</button></div>
+      <div id="tab-overlay" class="tab-content active"><div id="overlay-placeholder" class="viz-placeholder"><p>结果显示区</p></div><img id="overlay-img" class="viz-img hidden" src=""></div>
+      <div id="tab-heatmap" class="tab-content hidden"><div id="heatmap-placeholder" class="viz-placeholder"><p>结果显示区</p></div><img id="heatmap-img" class="viz-img hidden" src=""></div>
+    </div>
+  </section>
+</div>{% endblock %}
+{% block scripts %}<script src="/static/script.js"></script>{% endblock %}

@@ -1,0 +1,23 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>{% block title %}密集畜群清点系统{% endblock %}</title><link rel="stylesheet" href="/static/style.css"></head><body>
+<nav class="navbar">
+  <div class="nav-brand"><span class="nav-logo">🐄</span><span class="nav-title">密集畜群清点系统</span></div>
+  <div class="nav-links">
+    <a href="/" class="nav-link {% if active_page=='count' %}active{% endif %}">单张清点</a>
+    <a href="/batch" class="nav-link {% if active_page=='batch' %}active{% endif %}">批量清点</a>
+    <a href="/history" class="nav-link {% if active_page=='history' %}active{% endif %}">记录管理</a>
+    {% if current_user.role in ['admin','manager'] %}<a href="/dashboard" class="nav-link {% if active_page=='dashboard' %}active{% endif %}">数据看板</a>{% endif %}
+    <a href="/help" class="nav-link {% if active_page=='help' %}active{% endif %}">帮助</a>
+    {% if current_user.role == 'admin' %}<a href="/admin" class="nav-link {% if active_page=='admin' %}active{% endif %}">管理</a>{% endif %}
+  </div>
+  <div class="nav-right">
+    <a href="/profile" class="nav-link {% if active_page=='profile' %}active{% endif %}" title="个人设置">{{ current_user.display_name or current_user.username }} ({{ current_user.role }})</a>
+    <a href="/logout" class="nav-link">退出</a>
+    <span class="badge {% if model_loaded %}badge-ok{% else %}badge-warn{% endif %}">{% if model_loaded %}✓{% else %}⚠{% endif %}</span>
+  </div>
+</nav>
+<div id="toast" class="toast hidden"></div>
+<main class="page-content">{% block content %}{% endblock %}</main>
+<footer class="footer">密集畜群清点系统 v5 · 密度估计与迁移学习</footer>
+<script>function toast(msg,type){var t=document.getElementById('toast');t.textContent=msg;t.className='toast toast-'+type;setTimeout(function(){t.className='toast hidden'},3000)}</script>
+{% block scripts %}{% endblock %}</body></html>

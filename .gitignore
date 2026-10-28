@@ -1,0 +1,61 @@
+# Python caches and local environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+.conda/
+
+# Editor and operating-system files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Local secrets
+.env
+.env.*
+!.env.example
+
+# Private datasets and generated density maps
+data/livestock/images/*
+!data/livestock/images/.gitkeep
+data/livestock/annotations/*
+!data/livestock/annotations/.gitkeep
+data/livestock/density_maps/*
+!data/livestock/density_maps/.gitkeep
+
+# Local analysis, evaluation, and tests retained outside the public tree
+/tests/
+/evaluate.py
+/count_analysis/
+/experiments/logs/
+/baseline/detection_count.py
+/baseline/yolo_merged/
+/baseline/yolo_finetune/
+/baseline/runs/
+/baseline/*/data.yaml
+/tools/analyze_count_buckets.py
+/tools/compare_all_models.py
+/tools/generate_figures.py
+/tools/merge_yolo_datasets.py
+
+# Model weights and local pretrained assets
+models/pretrained/*.pth
+models/pretrained/*.pt
+models/pretrained/*.npz
+experiments/logs/*.pth
+experiments/logs/*.pt
+baseline/yolo_finetune/
+baseline/runs/
+
+# Runtime uploads, databases, and generated results
+/webapp/uploads/
+*.sqlite
+*.sqlite3
+*.db
+*.db-*
+results/

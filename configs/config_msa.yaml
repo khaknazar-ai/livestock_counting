@@ -1,0 +1,81 @@
+# ============================================================
+# MSA-CSRNet specific configuration
+# Overrides only what differs from configs/config.yaml
+# Usage: python train.py --config configs/config_msa.yaml --model msa_csrnet
+# ============================================================
+
+# ---------- Project Paths ----------
+paths:
+  data_root:        "data/livestock"
+  image_dir:        "data/livestock/images"
+  annotation_dir:   "data/livestock/annotations"
+  density_map_dir:  "data/livestock/density_maps"
+  pretrained_dir:   "models/pretrained"
+  log_dir:          "experiments/logs"
+  webapp_upload:    "webapp/uploads"
+
+# ---------- Dataset Split ----------
+dataset:
+  train_ratio: 0.7
+  val_ratio:   0.15
+  test_ratio:  0.15
+  seed:        42
+
+# ---------- Density Map Generation ----------
+density_map:
+  method:      "adaptive_gaussian"
+  k_nearest:   3
+  min_sigma:   4
+  fixed_sigma: 15
+  output_size: [512, 512]
+
+# ---------- Model: CSRNet ----------
+csrnet:
+  pretrained_backbone: "models/pretrained/vgg16-397923af.pth"
+  crowd_pretrained: "models/pretrained/shanghaitech_partA_best.pth"
+  freeze_frontend: true
+  frontend_unfreeze_epoch: 35        # ← 20→35: MSA backend needs more Phase 1 epochs
+
+# ---------- Training ----------
+train:
+  batch_size:       4
+  num_epochs:       120              # ← 80→120: MSA was still improving
+  learning_rate:    5.0e-5           # ← 1e-5→5e-5: BN allows higher LR
+  lr_frontend:      5.0e-6           # ← 1e-6→5e-6: proportionally higher
+  weight_decay:     1.0e-4           # ← 5e-4→1e-4: less regularization for smaller backend
+  loss:             "mse"
+  lr_scheduler:     "cosine"         # ← step→cosine: smooth decay, no abrupt LR cliff
+  lr_step_size:     20               # (ignored for cosine, kept for compatibility)
+  lr_gamma:         0.1              # (ignored for cosine, kept for compatibility)
+  lr_min:           1.0e-7           # cosine annealing minimum LR
+  save_best:        true
+  input_size:       [512, 512]
+  accumulation_steps: 2              # ← NEW: effective batch=8 for stable BatchNorm
+  early_stopping_patience: 15        # ← NEW: stop if val_mae doesn't improve for 15 epochs
+
+# ---------- Evaluation ----------
+eval:
+  metrics:          ["MAE", "RE"]
+  batch_size:       1
+
+# ---------- Detection Baseline: YOLOv8n ----------
+baseline:
+  model:            "yolov8n.pt"
+  conf_threshold:   0.25
+  iou_threshold:    0.45
+  img_size:         640
+  device:           "cuda"
+
+# ---------- Web App ----------
+webapp:
+  host:             "0.0.0.0"
+  port:             5000
+  debug:            false
+  max_upload_mb:    16
+  allowed_ext:      ["jpg", "jpeg", "png"]
+  example_images:   "webapp/static/examples"
+
+# ---------- Hardware ----------
+hardware:
+  device:   "cuda"
+  num_workers: 0

@@ -1,0 +1,50 @@
+{% extends "base.html" %}{% block title %}系统管理{% endblock %}
+{% block content %}
+<div class="page-header"><h1>系统管理</h1></div>
+
+<div class="card"><h2 class="card-title">添加用户</h2>
+<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end">
+  <div class="form-group" style="margin:0"><label>用户名</label><input id="nu" class="input-field" style="width:130px"></div>
+  <div class="form-group" style="margin:0"><label>密码</label><input id="np" type="password" class="input-field" style="width:130px"></div>
+  <div class="form-group" style="margin:0"><label>显示名</label><input id="nd" class="input-field" style="width:130px"></div>
+  <div class="form-group" style="margin:0"><label>单位</label><input id="no" class="input-field" style="width:130px"></div>
+  <div class="form-group" style="margin:0"><label>角色</label><select id="nr" class="input-field"><option value="operator">operator</option><option value="manager">manager</option><option value="admin">admin</option></select></div>
+  <button onclick="addU()" class="btn btn-primary btn-sm">添加</button>
+</div></div>
+
+<div class="card"><h2 class="card-title">用户列表</h2>
+<table class="data-table"><thead><tr><th>ID</th><th>用户名</th><th>显示名</th><th>单位</th><th>角色</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead><tbody>
+{% for u in users %}<tr>
+<td>{{ u.id }}</td><td>{{ u.username }}</td><td>{{ u.display_name }}</td><td>{{ u.organization or '—' }}</td>
+<td><span class="status-badge status-{{ u.role }}">{{ u.role }}</span></td>
+<td>{% if u.is_active %}<span style="color:#059669">活跃</span>{% else %}<span style="color:#dc2626">停用</span>{% endif %}</td>
+<td>{{ u.created_at or '—' }}</td>
+<td>{% if u.username!='admin' %}
+  <button onclick="toggleU({{ u.id }},{{ 'false' if u.is_active else 'true' }})" class="btn btn-outline btn-xs">{{ '停用' if u.is_active else '启用' }}</button>
+  <button onclick="resetPw({{ u.id }})" class="btn btn-outline btn-xs">重置密码</button>
+  <button onclick="delU({{ u.id }})" class="btn btn-danger btn-xs">删除</button>
+{% else %}—{% endif %}</td></tr>{% endfor %}</tbody></table></div>
+
+{% if deleted_tasks %}
+<div class="card"><h2 class="card-title">回收站（最近20条）</h2>
+<table class="data-table compact"><thead><tr><th>删除时间</th><th>文件</th><th>预测</th><th>删除人</th><th>操作</th></tr></thead><tbody>
+{% for t in deleted_tasks %}<tr><td>{{ t.deleted_at }}</td><td>{{ t.filename[:25] }}</td><td>{{ t.predicted_count|round|int }}</td><td>{{ t.deleted_by }}</td>
+<td><button onclick="restoreT('{{ t.task_id }}')" class="btn btn-outline btn-xs">恢复</button></td></tr>{% endfor %}
+</tbody></table></div>{% endif %}
+
+<div class="card"><h2 class="card-title">审计日志（最近50条）</h2>
+<table class="data-table compact"><thead><tr><th>时间</th><th>用户</th><th>操作</th><th>目标</th><th>详情</th></tr></thead><tbody>
+{% for l in audit_logs %}<tr><td>{{ l.timestamp }}</td><td>{{ l.username }}</td><td>{{ l.action }}</td><td>{{ l.target_type }}:{{ l.target_id[:8] }}</td><td class="hint">{{ l.detail[:50] }}</td></tr>{% endfor %}
+</tbody></table></div>
+
+<script>
+function addU(){var u=document.getElementById('nu').value,p=document.getElementById('np').value;
+if(!u||!p){toast('请填写用户名和密码','error');return}
+fetch('/api/admin/user',{method:'POST',headers:{'Content-Type':'application/json'},
+body:JSON.stringify({username:u,password:p,display_name:document.getElementById('nd').value,organization:document.getElementById('no').value,role:document.getElementById('nr').value})})
+.then(function(r){return r.json()}).then(function(d){if(d.success){toast('用户已添加','success');setTimeout(function(){location.reload()},500)}else toast(d.error,'error')})}
+function toggleU(id,active){fetch('/api/admin/user/'+id+'/toggle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({active:active})}).then(function(){location.reload()})}
+function resetPw(id){var pw=prompt('新密码:','');if(pw)fetch('/api/admin/user/'+id+'/reset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw})}).then(function(){toast('密码已重置','success')})}
+function delU(id){if(confirm('确认删除？'))fetch('/api/admin/user/'+id,{method:'DELETE'}).then(function(){location.reload()})}
+function restoreT(tid){fetch('/api/task/'+tid+'/restore',{method:'POST'}).then(function(){toast('已恢复','success');location.reload()})}
+</script>{% endblock %}
